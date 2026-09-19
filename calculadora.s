@@ -20,6 +20,10 @@ msg_segundo:
     .ascii "Ingrese el segundo número: "
     msg_segundo_len = . - msg_segundo
 
+msg_factorial:
+    .ascii "Ingrese numero para factorial: "
+    msg_factorial_len = . - msg_factorial
+
 msg_error_division_cero:
     .ascii "[ERROR division] -> No se puede dividir entre cero"
     msg_error_division_cero_len = . - msg_error_division_cero
@@ -27,6 +31,10 @@ msg_error_division_cero:
 msg_error_exponente:
     .ascii "[ERROR exponente] -> El exponente debe ser entero no negativo\n"
     msg_error_exponente_len = . - msg_error_exponente
+
+msg_error_factorial:
+    .ascii "[ERROR factorial] -> El numero debe ser entero no negativo\n"
+    msg_error_factorial_len = . - msg_error_factorial    
 
 newline:
     .ascii "\n"
@@ -78,11 +86,17 @@ _start:
     cmp w0, '5'
     beq potencia
 
+    cmp w0, '6'
+    beq factorial
+
     cmp w0, '7'
     beq exit
 
+opcion_invalida:
+    ldr x1, =msg_error
+    mov x2, msg_error_len
+    bl print
     b _start
-
 
 suma:
     mov x22, #0
@@ -99,6 +113,46 @@ Division:
     mov x22, #4    
     b read_numbers
     
+factorial:
+    // leemos el unico numero para el factorial
+    ldr x1, =msg_factorial
+    mov x2, msg_factorial_len
+    bl print
+    bl read
+
+    ldr x21, =input_buffer
+    bl atoi    
+    mov x20, x10   // tenemos guardado el numero a hacer fatorial en el x20
+
+    cmp x20, #0
+    blt msg_error_factorial
+
+    mov x9, #1   //Empezamos el acumulador en 1  asi si es 0! el resultado es 1
+
+    cbz x20, fin_factorial // si x20 es cero (0! = 1 ) saltamos al final con el acumulador x9 = 1
+    
+    cmp x20, #1  // si el factorial es 1!  saltamos al final con x9 = 1 ya que 1! = 1
+    beq fin_factorial
+
+    // x20 = numero  x23 = iterador desde 1 hasta el numero en x20  y  x9 = acumulador   x9 = x9 * (x23)
+    mov x23, #1  
+
+loop_factorial:    
+    // incrementamos x23 asi se multiplicara el acumulador x9 con el siguiente numero sucesivo
+    add x23, x23, #1    
+    // hacemos la operacion x9 = x9 * (x23)
+    mul x9, x9, x23
+    //verificamos si ya se alcanzo el numero en x20
+    cmp x23, x20
+    beq fin_factorial
+    //volvemos a ejecutar el loop
+    b loop_factorial
+
+fin_factorial:
+    //cargamos el resultado en x20
+    mov x20, x9
+    b print_result
+
 potencia:
     mov x22, #5
 
@@ -140,6 +194,8 @@ read_numbers:
 
 subtract:
     sub x20, x20, x21
+    mov x19, #2
+    sdiv x20,x20, x19
     b print_result
 
 multiplicar:
@@ -237,3 +293,9 @@ error_exponente_negativo:
     mov x2, msg_error_exponente_len
     bl print
     b _start   
+
+error_factorial_negativo:
+    ldr x1, =msg_error_factorial
+    mov x2, msg_error_factorial_len
+    bl print
+    b _start    
